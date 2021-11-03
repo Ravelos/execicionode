@@ -1,45 +1,62 @@
 const express = require('express')
 const { Sequelize, DataTypes } = require('sequelize')
+const task = require('./models/task')
 const Task = require('./models/task')
 
 const app = express()
 const sequelize = new Sequelize({ dialect: 'sqlite', storage: './task-list.db' })
 const tasks = Task(sequelize, DataTypes)
 
-// We need to parse JSON coming from requests
+
 app.use(express.json())
 
-// List tasks
-app.get('/tasks', (req, res) => {
-  res.json({ action: 'Listing tasks' })
+// Listar as tarefas
+app.get('/tasks', async (req, res) => {
+  const task = await tasks.findAll()
+  res.json({ task})
 })
 
-// Create task
-app.post('/tasks', (req, res) => {
+// ciar as tarefas
+app.post('/tasks', async(req, res) => {
   const body = req.body
+  const task = await tasks.create(body)
 
   res.json(body)
 })
 
-// Show task
-app.get('/tasks/:id', (req, res) => {
-  const taskId = req.params.id
 
-  res.send({ action: 'Showing task', taskId: taskId })
+app.get('/tasks/:id', async (req, res) => {
+  const taskId = req.params.id
+  const task = await tasks.findByPk(taskId)
+
+  res.send({ action: 'Showing task', task })
 })
 
-// Update task
-app.put('/tasks/:id', (req, res) => {
-  const taskId = req.params.id
-
-  res.send({ action: 'Updating task', taskId: taskId })
+// Fazer update 
+app.put('/tasks/:id', async(req, res) => {
+  try {
+    const taskId = req.params.id
+    const body = req.body
+    const taskUpdate = await tasks.findByPk(taskId)
+    taskUpdate.update({
+      description: body.description,
+      done: body.done
+    })    
+    res.send("Updating Task")
+  } catch (error) {
+    console.log(error);
+  } 
 })
 
-// Delete task
-app.delete('/tasks/:id', (req, res) => {
-  const taskId = req.params.id
-
-  res.send({ action: 'Deleting task', taskId: taskId })
+// Apagar as tarefas
+app.delete('/tasks/:id', async(req, res) => {
+  try {
+    const taskId = req.params.id
+    const taskRemove = await tasks.destroy({ where: {id: taskId}})
+    res.send({ action: 'Deleting task', taskRemove: taskRemove })
+  } catch (error) {
+    console.log(error);
+  } 
 })
 
 app.listen(3000, () => {
